@@ -1,0 +1,157 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String
+  costPrice         Decimal  @map("cost_price") @db.Decimal(10, 2)
+  sellingPrice      Decimal  @map("selling_price") @db.Decimal(10, 2)
+  oldPrice          Decimal? @map("old_price") @db.Decimal(10, 2)
+  supplier          String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  stock             Int      @default(0)
+  expiryDate        DateTime? @map("expiry_date")
+  barcode           String?   @unique
+  lowStockThreshold Int       @default(5) @map("low_stock_threshold")
+  orderItems        OrderItem[]
+  packageItems      PackageItem[]
+
+  @@map("products")
+}
+
+model Expense {
+  id          Int         @id @default(autoincrement())
+  type        ExpenseType
+  amount      Decimal     @db.Decimal(10, 2)
+  date        DateTime    @default(now())
+  description String?
+  metadata    Json?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("expenses")
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  phone     String   @unique
+  address   String?
+  instagram String?  @map("instagram")
+  tags      String?
+  points    Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  orders    Order[]
+
+  @@map("customers")
+}
+
+model Order {
+  id                Int         @id @default(autoincrement())
+  orderNumber       String      @unique @default(uuid()) @map("order_number")
+  customerName      String?     @map("customer_name")
+  totalSellingPrice Decimal     @map("total_selling_price") @db.Decimal(10, 2)
+  totalCost         Decimal     @map("total_cost") @db.Decimal(10, 2)
+  totalProfit       Decimal     @map("total_profit") @db.Decimal(10, 2)
+  packagingCost     Decimal     @default(0) @map("packaging_cost") @db.Decimal(10, 2)
+  deliveryCost      Decimal     @default(0) @map("delivery_cost") @db.Decimal(10, 2)
+  discount          Decimal     @default(0) @db.Decimal(10, 2)
+  discountType      DiscountType @default(AMOUNT) @map("discount_type")
+  status            OrderStatus @default(NEW)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  deliveryPaidBy    String      @default("CUSTOMER") @map("delivery_paid_by")
+  items             OrderItem[]
+  customerId        Int?        @map("customer_id")
+  redeemedPoints    Int         @default(0) @map("redeemed_points")
+  orderSource       String?     @map("order_source")
+  completedAt       DateTime?   @map("completed_at")
+  customer          Customer?   @relation(fields: [customerId], references: [id])
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  orderId      Int      @map("order_id")
+  productName  String   @map("product_name")
+  quantity     Int
+  costPrice    Decimal  @map("cost_price") @db.Decimal(10, 2)
+  sellingPrice Decimal  @map("selling_price") @db.Decimal(10, 2)
+  productId    Int?     @map("product_id")
+  packageId    Int?     @map("package_id")
+  isFree       Boolean  @default(false) @map("is_free")
+  order        Order    @relation(fields: [orderId], references: [id])
+  product      Product? @relation(fields: [productId], references: [id])
+  package      Package? @relation(fields: [packageId], references: [id])
+
+  @@map("order_items")
+}
+
+model Package {
+  id           Int           @id @default(autoincrement())
+  name         String
+  sellingPrice Decimal       @map("selling_price") @db.Decimal(10, 2)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  items        PackageItem[]
+  orderItems   OrderItem[]
+
+  @@map("packages")
+}
+
+model PackageItem {
+  id        Int     @id @default(autoincrement())
+  packageId Int     @map("package_id")
+  productId Int     @map("product_id")
+  quantity  Int
+  package   Package @relation(fields: [packageId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("package_items")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+}
+
+enum ExpenseType {
+  ADS
+  GOODS
+  PACKAGING
+  TRANSPORT
+  EXTRA
+}
+
+enum OrderStatus {
+  NEW
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+enum DiscountType {
+  AMOUNT
+  PERCENTAGE
+}

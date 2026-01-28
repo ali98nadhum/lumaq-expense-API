@@ -1,0 +1,142 @@
+openapi: 3.0.0
+info:
+  title: Lumaq Financial Backend API
+  version: 1.0.0
+  description: API for tracking expenses, orders, and products for Lumaq Cosmetics.
+servers:
+  - url: http://localhost:3000/api
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+                role: { type: string, enum: [OWNER, ADMIN] }
+      responses:
+        201:
+          description: Created
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        200:
+          description: Successful login
+  /expenses:
+    get:
+      summary: Get expenses
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string }
+        - in: query
+          name: startDate
+          schema: { type: string }
+        - in: query
+          name: endDate
+          schema: { type: string }
+      responses:
+        200:
+          description: List of expenses
+    post:
+      summary: Create expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string, enum: [ADS, GOODS, PACKAGING, EXTRA] }
+                amount: { type: number }
+                description: { type: string }
+                date: { type: string }
+      responses:
+        201:
+          description: Created
+  /products:
+    get:
+      summary: Get products
+      responses:
+        200:
+          description: List of products
+    post:
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                costPrice: { type: number }
+                sellingPrice: { type: number }
+                supplier: { type: string }
+      responses:
+        201:
+          description: Created
+  /orders:
+    get:
+      summary: Get orders
+      responses:
+        200:
+          description: List of orders
+    post:
+      summary: Create order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerName: { type: string }
+                packagingCost: { type: number }
+                deliveryCost: { type: number }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId: { type: integer }
+                      quantity: { type: integer }
+      responses:
+        201:
+          description: Created
+  /reports/dashboard:
+    get:
+      summary: Get dashboard stats
+      parameters:
+        - in: query
+          name: startDate
+          schema: { type: string, format: date-time }
+        - in: query
+          name: endDate
+          schema: { type: string, format: date-time }
+      responses:
+        200:
+          description: Dashboard stats including profit, revenue, expenses (breakdown), and cash flow.
